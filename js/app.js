@@ -17,13 +17,13 @@ const todos = [
 	},
 	{
 		text: "Task 5",
-		state: "completed"
+		state: "active"
 	}
 ];
 
 const applicationState = {
 	todos,
-	filter: "all" // active completed
+	filter: "all" // all active completed
 };
 
 function renderTodo(todo) {
@@ -64,7 +64,43 @@ function renderTodos({ target, todos }) {
 	});
 }
 
-function renderCounter({ target, count }) {}
+function renderClearButton({ target, isCompletedTasks }) {
+	const clearButton = target.querySelector(".clear-completed");
+
+	if (!isCompletedTasks) {
+		clearButton.style.display = "none";
+	} else {
+		clearButton.style.display = "block";
+	}
+}
+
+function renderCounter({ target, count }) {
+	target.innerHTML = "";
+	const container = document.createElement("div");
+	const counterTemplate = `<span><strong>${count}</strong> ${
+		count === 1 ? "item" : "items"
+	} left </span>`;
+	container.innerHTML = counterTemplate;
+	const counterElem = container.querySelector("span");
+
+	target.appendChild(counterElem);
+}
+
+function renderFilters({ target, filter }) {
+	const MAPPING = {
+		all: ".all",
+		active: ".active",
+		completed: ".completed"
+	};
+
+	const filterElems = Array.from(target.querySelectorAll("a"));
+	filterElems.forEach(elem => {
+		elem.classList.remove("selected");
+	});
+
+	const currentFilter = target.querySelector(MAPPING[filter]);
+	currentFilter.classList.add("selected");
+}
 
 function renderApp({ target, applicationState }) {
 	const { todos } = applicationState;
@@ -77,8 +113,17 @@ function renderApp({ target, applicationState }) {
 		target: target.querySelector(".todo-count"),
 		count: todos.filter(todo => todo.state === "active").length
 	});
+	renderClearButton({
+		target,
+		isCompletedTasks: todos.some(todo => todo.state === "completed")
+	});
+	renderFilters({
+		target: target.querySelector(".filters"),
+		filter: applicationState.filter
+	});
 }
 
 renderApp({
-	applicationState
+	applicationState,
+	target: document.querySelector(".todoapp")
 });
