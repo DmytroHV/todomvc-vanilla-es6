@@ -26,6 +26,14 @@ const applicationState = {
 	filter: "all" // all active completed
 };
 
+function changeFilter(filter) {
+	applicationState.filter = filter;
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
 function renderTodo(todo) {
 	const div = document.createElement("div");
 	const todoTemplate = `
@@ -102,8 +110,44 @@ function renderFilters({ target, filter }) {
 	currentFilter.classList.add("selected");
 }
 
-function renderApp({ target, applicationState }) {
+function handleFilterClick(event) {
+	event.preventDefault();
+	let target = event.target;
 	const { todos } = applicationState;
+
+	while (target !== this) {
+		if (target.classList.contains("all")) {
+			changeFilter("all");
+		}
+
+		if (target.classList.contains("active")) {
+			changeFilter("active");
+		}
+
+		if (target.classList.contains("completed")) {
+			changeFilter("completed");
+		}
+
+		target = target.parentNode;
+	}
+}
+
+function bindEvents(applicationState) {
+	const filtersList = document.querySelector(".filters");
+
+	filtersList.addEventListener("click", handleFilterClick);
+}
+
+function renderApp({ target, applicationState }) {
+	let { todos, filter } = applicationState;
+
+	if (filter === "active") {
+		todos = todos.filter(todo => todo.state === "active");
+	}
+
+	if (filter === "completed") {
+		todos = todos.filter(todo => todo.state === "completed");
+	}
 
 	renderTodos({
 		todos,
@@ -119,7 +163,7 @@ function renderApp({ target, applicationState }) {
 	});
 	renderFilters({
 		target: target.querySelector(".filters"),
-		filter: applicationState.filter
+		filter: filter
 	});
 }
 
@@ -127,3 +171,5 @@ renderApp({
 	applicationState,
 	target: document.querySelector(".todoapp")
 });
+
+bindEvents();
