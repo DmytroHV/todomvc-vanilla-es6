@@ -26,8 +26,32 @@ const applicationState = {
 	filter: "all" // all active completed
 };
 
+function addNewTodo(text) {
+	const todo = {
+		text,
+		state: "active"
+	};
+	applicationState.todos.push(todo);
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
 function changeFilter(filter) {
 	applicationState.filter = filter;
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
+function removeCompleted() {
+	const { todos } = applicationState;
+
+	const withoutCompleted = todos.filter(todo => todo.state !== "completed");
+	applicationState.todos = withoutCompleted;
+
 	renderApp({
 		applicationState,
 		target: document.querySelector(".todoapp")
@@ -132,10 +156,42 @@ function handleFilterClick(event) {
 	}
 }
 
+function handleClearClick(event) {
+	removeCompleted();
+}
+
+function handleTodosClick(event) {
+	event.preventDefault();
+	let target = event.target;
+
+	while (target !== this) {
+		if (target.classList.contains("toggle")) {
+		}
+
+		if (target.classList.contains("destroy")) {
+		}
+
+		target = target.parentNode;
+	}
+}
+
+function handleNewTodo(event) {
+	if (event.keyCode === 13) {
+		addNewTodo(event.target.value);
+		event.target.value = "";
+	}
+}
+
 function bindEvents(applicationState) {
 	const filtersList = document.querySelector(".filters");
+	const clearCompletedButton = document.querySelector(".clear-completed");
+	const todoList = document.querySelector(".todo-list");
+	const input = document.querySelector(".new-todo");
 
 	filtersList.addEventListener("click", handleFilterClick);
+	clearCompletedButton.addEventListener("click", handleClearClick);
+	todoList.addEventListener("click", handleTodosClick);
+	input.addEventListener("keyup", handleNewTodo);
 }
 
 function renderApp({ target, applicationState }) {
