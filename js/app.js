@@ -1,37 +1,72 @@
 const todos = [
 	{
+		id: 131,
 		text: "Task 1",
 		state: "active"
 	},
 	{
+		id: 132,
 		text: "Task 2",
 		state: "active"
 	},
 	{
+		id: 133,
 		text: "Task 3",
 		state: "completed"
 	},
 	{
+		id: 134,
 		text: "Task 4",
 		state: "active"
 	},
 	{
+		id: 135,
 		text: "Task 5",
 		state: "active"
 	}
 ];
+
+const ENTER_KEY = 13;
 
 const applicationState = {
 	todos,
 	filter: "all" // all active completed
 };
 
-function addNewTodo(text) {
-	const todo = {
-		text,
-		state: "active"
-	};
+function addNewTodo(todo) {
 	applicationState.todos.push(todo);
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
+function toggleTodo(id) {
+	applicationState.todos.forEach(todo => {
+		if (todo.id === id) {
+			if (todo.state === "completed") {
+				todo.state = "active";
+			} else {
+				todo.state = "completed";
+			}
+		}
+	});
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
+function toggleAllTodos() {
+	const { todos } = applicationState;
+	const isUncompleted = todos.some(todo => todo.state !== "completed");
+
+	if (isUncompleted) {
+		todos.forEach(todo => (todo.state = "completed"));
+	} else {
+		todos.forEach(todo => (todo.state = "active"));
+	}
+
 	renderApp({
 		applicationState,
 		target: document.querySelector(".todoapp")
@@ -58,12 +93,45 @@ function removeCompleted() {
 	});
 }
 
+function removeTodo(id) {
+	const { todos } = applicationState;
+
+	const withoutTodo = todos.filter(todo => todo.id !== Number(id));
+	applicationState.todos = withoutTodo;
+
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
+function editTodo({ id, text }) {
+	const { todos } = applicationState;
+
+	todos.forEach(todo => {
+		if (todo.id === Number(id)) {
+			todo.text = text;
+		}
+	});
+
+	renderApp({
+		applicationState,
+		target: document.querySelector(".todoapp")
+	});
+}
+
 function renderTodo(todo) {
 	const div = document.createElement("div");
+	const CLASSES_MAP = {
+		active: "",
+		completed: "completed"
+	};
 	const todoTemplate = `
-    <li>
+    <li data-id="${todo.id}" class="${CLASSES_MAP[todo.state]}">
       <div class="view">
-        <input class="toggle" type="checkbox">
+        <input class="toggle" type="checkbox" ${
+					todo.state === "completed" ? "checked" : ""
+				}>
         <label>${todo.text}</label>
         <button class="destroy"></button>
       </div>
@@ -73,18 +141,14 @@ function renderTodo(todo) {
 
 	div.innerHTML = todoTemplate;
 	const todoElem = div.querySelector("li");
-	const CLASSES_MAP = {
-		active: "",
-		completed: "completed"
-	};
 
-	if (todo.state !== "active") {
-		todoElem.classList.add(CLASSES_MAP[todo.state]);
-	}
+	// if (todo.state !== "active") {
+	// 	todoElem.classList.add(CLASSES_MAP[todo.state]);
+	// }
 
-	if (todo.state === "completed") {
-		todoElem.querySelector(".toggle").checked = true;
-	}
+	// if (todo.state === "completed") {
+	// 	todoElem.querySelector(".toggle").checked = true;
+	// }
 
 	return todoElem;
 }
@@ -166,20 +230,65 @@ function handleTodosClick(event) {
 
 	while (target !== this) {
 		if (target.classList.contains("toggle")) {
+			const li = target.closest("li");
+			const id = parseInt(li.dataset.id, 10);
+			toggleTodo(id);
+			return;
 		}
 
 		if (target.classList.contains("destroy")) {
+			const todoId = event.target.closest("li").dataset.id;
+			removeTodo(todoId);
+			return;
 		}
 
 		target = target.parentNode;
 	}
 }
 
+function handleBlur(event) {
+	const target = event.target;
+	const li = target.closest("li");
+	const id = li.dataset.id;
+	const currentValue = target.value;
+	const label = li.querySelector("label");
+
+	if (currentValue === "") {
+		removeTodo(id);
+		return;
+	}
+
+	target.style.display = "none";
+	li.classList.remove("editing");
+	this.removeEventListener("blur", handleBlur);
+
+	editTodo({ id, text: currentValue });
+}
+
+function handleTodoDblClick(event) {
+	const li = event.target.closest("li");
+	const label = li.querySelector("label");
+	const editInput = li.querySelector("input.edit");
+
+	li.classList.add("editing");
+	editInput.value = label.textContent;
+	editInput.style.display = "block";
+	editInput.addEventListener("blur", handleBlur);
+}
+
 function handleNewTodo(event) {
-	if (event.keyCode === 13) {
-		addNewTodo(event.target.value);
+	if (event.keyCode === ENTER_KEY) {
+		addNewTodo({
+			text: event.target.value,
+			state: "active",
+			id: Date.now()
+		});
 		event.target.value = "";
 	}
+}
+
+function handleToggleAll(event) {
+	toggleAllTodos();
 }
 
 function bindEvents(applicationState) {
@@ -187,11 +296,14 @@ function bindEvents(applicationState) {
 	const clearCompletedButton = document.querySelector(".clear-completed");
 	const todoList = document.querySelector(".todo-list");
 	const input = document.querySelector(".new-todo");
+	const toggleAllButton = document.querySelector(".toggle-all");
 
 	filtersList.addEventListener("click", handleFilterClick);
+	todoList.addEventListener("dblclick", handleTodoDblClick);
 	clearCompletedButton.addEventListener("click", handleClearClick);
 	todoList.addEventListener("click", handleTodosClick);
 	input.addEventListener("keyup", handleNewTodo);
+	toggleAllButton.addEventListener("click", handleToggleAll);
 }
 
 function renderApp({ target, applicationState }) {
